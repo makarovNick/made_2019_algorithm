@@ -21,31 +21,32 @@ struct Heap
 {
 	size_t length;
 	size_t size;
-	
+
 	struct node {
 		int value;
 		size_t index;
-		node() : value(-2147483647), index(0) {};
+		node() = default;
 		node(int v, size_t i) : value(v), index(i) {}
 	};
 	node* array;
-	~Heap() {
-		delete array;
-		array = nullptr;
-	}
+
 	Heap() {
 		array = new node[8];
 		size = 8;
 		length = 0;
 	}
+	~Heap() {
+		delete array;
+		array = nullptr;
+	}
 
 	void siftDown(size_t);
 	void popTop();
 	void siftUp(size_t);
-	void insert(const node &);
+	void insert(const node&);
+	void resize();
 
 	node getMax() const { return array[0]; };
-	void resize();
 };
 void Heap::siftDown(size_t index)
 {
@@ -53,11 +54,11 @@ void Heap::siftDown(size_t index)
 	size_t rightChildIndex = 2 * index + 2;
 
 	if (leftChildIndex >= length)
-		return; 
+		return;
 
 	size_t maxIndex = index;
 
-	if (array[index].value < array [leftChildIndex].value)
+	if (array[index].value < array[leftChildIndex].value)
 	{
 		maxIndex = leftChildIndex;
 	}
@@ -94,7 +95,7 @@ void Heap::siftUp(size_t index)
 	}
 }
 
-void Heap::insert(const Heap::node & newValue)
+void Heap::insert(const Heap::node& newValue)
 {
 	if (length + 1 == size)
 		resize();
@@ -122,7 +123,7 @@ int* SlidingMax(size_t size, const int array[], size_t wsize) {
 	size_t j = 0;
 	for (; i < wsize; i++)
 	{
-		heap.insert(*(new Heap::node(array[i], i)));
+		heap.insert({ array[i], i });
 	}
 	result[j++] = heap.getMax().value;
 	for (; i < size; i++)
@@ -133,7 +134,7 @@ int* SlidingMax(size_t size, const int array[], size_t wsize) {
 			heap.popTop();
 			if (temp == heap.getMax().index) break;
 		}
-		heap.insert(*(new Heap::node(array[i], i)));
+		heap.insert({ array[i], i });
 		result[j++] = heap.getMax().value;
 	}
 	return result;
