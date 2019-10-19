@@ -56,7 +56,6 @@ class deque {
   void push_back(int);
   int pop_front();
   int pop_back();
-  // int size() const { return size; }
   bool is_empty() const { return length == 0; }
   int front() const { return base[head]; }
   int back() const { return base[tail]; }
@@ -72,6 +71,7 @@ void deque::push_front(int value) {
 }
 
 void deque::push_back(int value) {
+ 
   length++;
   base[tail] = value;
 
@@ -79,36 +79,42 @@ void deque::push_back(int value) {
     tail = 0;
   else
     tail++;
+ 
   if (length + 1 >= size) resize(size * 2);
 }
 
 int deque::pop_front() {
-  // assert(length != -1);
-  if (length == 0) return -1;
+
+ if (length == 0) return -1;
+ 
   if (head == (size - 1))
     head = 0;
   else
     head++;
   length--;
   int val = base[head];
+ 
   if (length * 4 < size && size > 8) resize(size / 4);
+ 
   return val;
 }
 
 int deque::pop_back() {
-  // assert(length != 0);
   if (length == 0) return -1;
+ 
   if (tail == 0)
     tail = size - 1;
   else
     tail--;
   int val = base[tail];
   length--;
+ 
   if (length * 5 < size && size > 8) resize(size / 4);
   return val;
 }
 
 void deque::resize(const size_t value) {
+ 
   int* new_base = new int[value];
   for (size_t i = 0; i < length; i++) {
     head++;
@@ -118,11 +124,13 @@ void deque::resize(const size_t value) {
   tail = length;
   size = value;
   head = value - 1;
+ 
   delete[] base;
   base = new_base;
 }
 
 int main() {
+ 
   deque deq;
 
   int n = 0;
