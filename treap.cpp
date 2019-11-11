@@ -32,14 +32,12 @@ class treap
 
 	struct node
 	{
-	public:
-		T value;
+		const T& value;
 		unsigned priority;
 		int tree_size = 1;
 		node* left = nullptr;
 		node* right = nullptr;
 
-		int size();
 		int sizeOfLeft()
 		{
 			return (left != nullptr) ? left->tree_size : 0;
@@ -72,10 +70,6 @@ public:
 	T findByPosition(int keyPos)
 	{
 		return findByPosition(root, keyPos + 1);
-	}
-	int size()
-	{
-		return (root != nullptr) ? root->tree_size : 0;
 	}
 
 	treap()
@@ -115,15 +109,6 @@ unsigned treap<T>::node::getPriority()
 }
 
 template <typename T>
-inline int treap<T>::node::size()
-{
-	int left_size = (left != nullptr) ? left->tree_size : 0,
-		right_size = (right != nullptr) ? right->tree_size : 0;
-
-	return tree_size = left_size + 1 + right_size;
-}
-
-template <typename T>
 typename treap<T>::node* treap<T>::rotateRight(node* x)
 {
 	node* y = x->left;
@@ -131,9 +116,6 @@ typename treap<T>::node* treap<T>::rotateRight(node* x)
 
 	y->right = x;
 	x->left = T2;
-
-	x->size();
-	y->size();
 
 	return y;
 }
@@ -147,14 +129,11 @@ typename treap<T>::node* treap<T>::rotateLeft(node* y)
 	x->left = y;
 	y->right = T2;
 
-	y->size();
-	x->size();
-
 	return x;
 }
 
 template <typename T>
-typename treap<T>::node* treap<T>::_find(node* curNode, T value, int& keyPos)
+typename treap<T>::node* treap<T>::_find(node* curNode, const T& value, int& keyPos)
 {
 	if (curNode == nullptr)
 		return nullptr;
@@ -181,7 +160,7 @@ typename treap<T>::node* treap<T>::_find(node* curNode, T value, int& keyPos)
 }
 
 template <typename T>
-inline bool treap<T>::contains(T value)
+inline bool treap<T>::contains(const T& value)
 {
 	int keyPos = 0;
 
@@ -196,7 +175,7 @@ inline bool treap<T>::contains(T value)
 }
 
 template <typename T>
-inline int treap<T>::getPosition(T value)
+inline int treap<T>::getPosition(const T& value)
 {
 	int keyPos = 0;
 	if (_find(root, value, keyPos) != nullptr)
@@ -210,7 +189,7 @@ inline int treap<T>::getPosition(T value)
 }
 
 template <typename T>
-inline bool treap<T>::erase(T value)
+inline bool treap<T>::erase(const T& value)
 {
 	bool erased = false;
 	root = _erase(root, value, erased);
@@ -239,7 +218,7 @@ T treap<T>::findByPosition(node* curNode, int keyPos)
 }
 
 template <typename T>
-typename treap<T>::node* treap<T>::_insert(node* curNode, T value)
+typename treap<T>::node* treap<T>::_insert(node* curNode, const T& value)
 {
 	if (curNode == nullptr)
 		return new node(value);
@@ -259,13 +238,11 @@ typename treap<T>::node* treap<T>::_insert(node* curNode, T value)
 			curNode = rotateLeft(curNode);
 	}
 
-	curNode->size();
-
 	return curNode;
 }
 
 template <typename T>
-inline bool treap<T>::insert(T value)
+inline bool treap<T>::insert(const T& value)
 {
 	if (contains(value))
 	{
@@ -279,7 +256,7 @@ inline bool treap<T>::insert(T value)
 }
 
 template <typename T>
-typename treap<T>::node* treap<T>::_erase(node* curNode, T value, bool& erased)
+typename treap<T>::node* treap<T>::_erase(node* curNode, const T& value, bool& erased)
 {
 	if (curNode == nullptr)
 		return nullptr;
@@ -327,9 +304,6 @@ typename treap<T>::node* treap<T>::_erase(node* curNode, T value, bool& erased)
 		curNode = rotateLeft(curNode);
 		curNode->left = _erase(curNode->left, value, erased);
 	}
-
-	if (curNode != nullptr)
-		curNode->size();
 
 	return curNode;
 }
