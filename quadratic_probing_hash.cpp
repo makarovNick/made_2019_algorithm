@@ -21,42 +21,57 @@
 #include <iostream>
 #include <string>
 
+class MyHash{
+public:
+	size_t operator()(const std::string& key, size_t capacity) const
+	{
+		size_t _hash = 0;
+
+		for (size_t i = 0; i < key.length(); i++)
+		{
+			_hash = (_hash + 31 * key[i]) % capacity;
+		}
+
+		return _hash;
+	}
+};
+
+template<typename T, typename Hash = MyHash>
 class HashTable
 {
 	const double ALPHA = 0.75;
 	const size_t INIT_SIZE = 8;
 
 public:
+
 	HashTable();
 	~HashTable();
+	HashTable& operator =(HashTable&&) = delete;
+	HashTable (HashTable&&) = delete;
+	HashTable(const HashTable&) = delete;
+	HashTable& operator =(HashTable&) = delete;
 
-	bool Insert(const std::string& key);
-	bool Remove(const std::string& key);
-	bool Has(const std::string& key) const;
+	bool Insert(const T& key);
+	bool Remove(const T& key);
+	bool Has(const T& key) const;
 
 private:
 	struct Node
 	{
-		Node(const std::string& key);
-		std::string data;
-		bool deleted;
+		Node(const T& key);
+		T data;
 	};
 
 	void Rehash();
-	size_t Hash(const std::string& key) const;
 
 	size_t capacity;
 	size_t size;
+	const std::string deleted = "!@#$%^__DELETED_^%$#@!";
 	Node** table;
 };
 
-HashTable::Node::Node(const std::string& key)
-	: data(key)
-	, deleted(false)
-{
-}
-
-HashTable::HashTable()
+template<typename T, typename Hash>
+HashTable<T, Hash>::HashTable()
 	: capacity(INIT_SIZE)
 	, size(0)
 {
@@ -67,7 +82,8 @@ HashTable::HashTable()
 	}
 }
 
-HashTable::~HashTable()
+template<typename T, typename Hash>
+HashTable<T, Hash>::~HashTable()
 {
 	for (size_t i = 0; i < capacity; ++i)
 	{
@@ -79,15 +95,16 @@ HashTable::~HashTable()
 	delete[] table;
 }
 
-
-bool HashTable::Has(const std::string& key) const
+template<typename T, typename Hash>
+bool HashTable<T, Hash>::Has(const T& key) const
 {
-	size_t _hash = Hash(key);
+	Hash hasher;
+	size_t _hash = hasher(key, capacity);
 	size_t i = 0;
 
 	while (table[_hash] != nullptr && i < capacity)
 	{
-		if (!table[_hash]->deleted && table[_hash]->data.compare(key) == 0)
+		if (table[_hash]->data.compare(deleted) && table[_hash]->data.compare(key) == 0)
 		{
 			return true;
 		}
@@ -98,19 +115,17 @@ bool HashTable::Has(const std::string& key) const
 	return false;
 }
 
-bool HashTable::Insert(const std::string& key)
+template<typename T, typename Hash>
+bool HashTable<T, Hash>::Insert(const T& key)
 {
-	if (Has(key))
-	{
-		return false;
-	}
 
 	if ((size / (double)capacity) >= ALPHA)
 	{
 		Rehash();
 	}
 
-	size_t _hash = Hash(key);
+	Hash hasher;
+	size_t _hash = hasher(key, capacity);
 	size_t i = 0;
 
 	while (i < capacity)
@@ -121,10 +136,15 @@ bool HashTable::Insert(const std::string& key)
 			size++;
 			return true;
 		}
-		else if (table[_hash]->deleted)
+
+		if (table[_hash]->data.compare(deleted) && table[_hash]->data.compare(key) == 0)
+		{
+			return false;
+		}
+
+		else if (table[_hash]->data.compare(deleted))
 		{
 			table[_hash]->data = key;
-			table[_hash]->deleted = false;
 			size++;
 			return true;
 		}
@@ -135,21 +155,24 @@ bool HashTable::Insert(const std::string& key)
 	return false;
 }
 
-bool HashTable::Remove(const std::string& key)
+template<typename T, typename Hash>
+HashTable<T, Hash>::Node::Node(const T& key)
+	: data(key)
 {
-	if (!Has(key))
-	{
-		return false;
-	}
+}
 
-	size_t _hash = Hash(key);
+template<typename T, typename Hash>
+bool HashTable<T, Hash>::Remove(const T& key)
+{
+	Hash hasher;
+	size_t _hash = hasher(key, capacity);
 	size_t i = 0;
 
 	while (i < capacity)
 	{
-		if (!table[_hash]->deleted && table[_hash]->data.compare(key) == 0)
+		if (table[_hash]->data.compare(deleted) && table[_hash]->data.compare(key) == 0)
 		{
-			table[_hash]->deleted = true;
+			table[_hash]->data = deleted;
 			size--;
 			return true;
 		}
@@ -159,7 +182,8 @@ bool HashTable::Remove(const std::string& key)
 	return false;
 }
 
-void HashTable::Rehash()
+template<typename T, typename Hash>
+void HashTable<T, Hash>::Rehash()
 {
 	Node** tmp = table;
 	capacity *= 2;
@@ -175,7 +199,7 @@ void HashTable::Rehash()
 	{
 		if (tmp[i] != nullptr)
 		{
-			if (!tmp[i]->deleted)
+			if (tmp[i]->data.compare(deleted))
 				Insert(tmp[i]->data);
 			delete tmp[i];
 		}
@@ -184,22 +208,9 @@ void HashTable::Rehash()
 	delete[] tmp;
 }
 
-
-size_t HashTable::Hash(const std::string& key) const
-{
-	size_t _hash = 0;
-
-	for (size_t i = 0; i < key.length(); i++)
-	{
-		_hash = (_hash + 31 * key[i]) % capacity;
-	}
-
-	return _hash;
-}
-
 int main()
 {
-	HashTable table;
+	HashTable<std::string> table;
 
 	char command;
 	std::string key;
