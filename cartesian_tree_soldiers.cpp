@@ -138,47 +138,50 @@ inline int Treap<T>::Node::size()
 template <typename T>
 std::pair<typename Treap<T>::Node*, typename Treap<T>::Node*> Treap<T>::split(Node* x)
 {
-	Node* T2;
+	Node* subtree;
 	Node* y;
 
 	if (x->left != nullptr && x->left->priority > x->priority)
 	{
 		y = x->left;
-		T2 = y->right;
+		subtree = y->right;
 		return { x, y->right };
 	}
 	else if (x->right != nullptr && x->right->priority < x->priority)
 	{
 		y = x->right;
-		T2 = y->left;
-		return { x, T2 };
+		subtree = y->left;
+		return { x, subtree };
 	}
 	return { x, nullptr };
 }
 
 template <typename T>
-typename Treap<T>::Node* Treap<T>::merge(Node* x, Node* T2)
+typename Treap<T>::Node* Treap<T>::merge(Node* x, Node* subtree)
 {
-	if (T2 == nullptr)
+	if (subtree == nullptr)
 		return x;
+
 	if (x->left != nullptr && x->left->priority > x->priority)
 	{
 		Node* y = x->left;
 		y->right = x;
-		x->left = T2;
+		x->left = subtree;
 
 		x->size();
 		y->size();
+
 		return y;
 	}
 	else if (x->right != nullptr && x->right->priority < x->priority)
 	{
 		Node* y = x->right;
 		y->left = x;
-		x->right = T2;
+		x->right = subtree;
 
 		x->size();
 		y->size();
+
 		return y;
 	}
 }
@@ -283,7 +286,6 @@ T Treap<T>::FindByPosition(Node* curNode, int keyPos) const
 template <typename T>
 typename Treap<T>::Node* Treap<T>::_insert(Node* curNode, const T& value)
 {
-	std::pair<Node*, Node*> splitted;
 	if (curNode == nullptr)
 		return new Node(value);
 
@@ -296,7 +298,7 @@ typename Treap<T>::Node* Treap<T>::_insert(Node* curNode, const T& value)
 		curNode->right = _insert(curNode->right, value);
 	}
 
-	splitted = split(curNode);
+	auto splitted = split(curNode);
 	curNode = merge(splitted.first, splitted.second);
 
 	curNode->size();
@@ -328,9 +330,7 @@ typename Treap<T>::Node* Treap<T>::_erase(Node* curNode, const T& value, bool& e
 	Node* left = curNode->left;
 	Node* right = curNode->right;
 
-	std::pair<Node*, Node*> splitted;
-
-	splitted = split(curNode);
+	auto splitted = split(curNode);
 	curNode = merge(splitted.first, splitted.second);
 
 	if (value > curNode->value)
