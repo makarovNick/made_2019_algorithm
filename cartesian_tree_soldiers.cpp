@@ -136,50 +136,50 @@ inline int Treap<T>::Node::size()
 }
 
 template <typename T>
-std::pair<typename Treap<T>::Node*, typename Treap<T>::Node*> Treap<T>::split(Node* x)
+std::pair<typename Treap<T>::Node*, typename Treap<T>::Node*> Treap<T>::split(Node* currentRoot)
 {
 	Node* subtree;
 	Node* y;
 
-	if (x->left != nullptr && x->left->priority > x->priority)
+	if (currentRoot->left != nullptr && currentRoot->left->priority > currentRoot->priority)
 	{
-		y = x->left;
+		y = currentRoot->left;
 		subtree = y->right;
-		return { x, y->right };
+		return { currentRoot, y->right };
 	}
-	else if (x->right != nullptr && x->right->priority < x->priority)
+	else if (currentRoot->right != nullptr && currentRoot->right->priority < currentRoot->priority)
 	{
-		y = x->right;
+		y = currentRoot->right;
 		subtree = y->left;
-		return { x, subtree };
+		return { currentRoot, subtree };
 	}
-	return { x, nullptr };
+	return { currentRoot, nullptr };
 }
 
 template <typename T>
-typename Treap<T>::Node* Treap<T>::merge(Node* x, Node* subtree)
+typename Treap<T>::Node* Treap<T>::merge(Node* currentRoot, Node* subtree)
 {
 	if (subtree == nullptr)
-		return x;
+		return currentRoot;
 
-	if (x->left != nullptr && x->left->priority > x->priority)
+	if (currentRoot->left != nullptr && currentRoot->left->priority > currentRoot->priority)
 	{
-		Node* y = x->left;
-		y->right = x;
-		x->left = subtree;
+		Node* y = currentRoot->left;
+		y->right = currentRoot;
+		currentRoot->left = subtree;
 
-		x->size();
+		currentRoot->size();
 		y->size();
 
 		return y;
 	}
-	else if (x->right != nullptr && x->right->priority < x->priority)
+	else if (currentRoot->right != nullptr && currentRoot->right->priority < currentRoot->priority)
 	{
-		Node* y = x->right;
-		y->left = x;
-		x->right = subtree;
+		Node* y = currentRoot->right;
+		y->left = currentRoot;
+		currentRoot->right = subtree;
 
-		x->size();
+		currentRoot->size();
 		y->size();
 
 		return y;
