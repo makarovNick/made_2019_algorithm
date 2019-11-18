@@ -85,7 +85,7 @@ public:
 	bool Erase(const T& val);
 
 
-	int GetPosition(const T& val);
+	int GetPosition(const T& val) const;
 	T FindByPosition(int keyPos) const;
 
 	int size() const
@@ -232,7 +232,7 @@ typename Treap<T>::Node* Treap<T>::_find(Node* curNode, const T& value, int& key
 }
 
 template <typename T>
-inline int Treap<T>::GetPosition(const T& value)
+inline int Treap<T>::GetPosition(const T& value) const
 {
 	int keyPos = 0;
 	if (_find(root, value, keyPos) != nullptr)
