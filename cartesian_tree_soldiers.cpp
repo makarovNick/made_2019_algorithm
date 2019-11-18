@@ -129,8 +129,8 @@ unsigned Treap<T>::Node::getPriority()
 template <typename T>
 inline int Treap<T>::Node::size()
 {
-	int left_size = (left != nullptr) ? left->tree_size : 0,
-		right_size = (right != nullptr) ? right->tree_size : 0;
+	int left_size = (left != nullptr) ? left->tree_size : 0;
+	int right_size = (right != nullptr) ? right->tree_size : 0;
 
 	return tree_size = left_size + 1 + right_size;
 }
