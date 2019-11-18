@@ -139,18 +139,18 @@ template <typename T>
 std::pair<typename Treap<T>::Node*, typename Treap<T>::Node*> Treap<T>::split(Node* currentRoot)
 {
 	Node* subtree;
-	Node* y;
+	Node* newRoot;
 
 	if (currentRoot->left != nullptr && currentRoot->left->priority > currentRoot->priority)
 	{
-		y = currentRoot->left;
-		subtree = y->right;
-		return { currentRoot, y->right };
+		newRoot = currentRoot->left;
+		subtree = newRoot->right;
+		return { currentRoot, newRoot->right };
 	}
 	else if (currentRoot->right != nullptr && currentRoot->right->priority < currentRoot->priority)
 	{
-		y = currentRoot->right;
-		subtree = y->left;
+		newRoot = currentRoot->right;
+		subtree = newRoot->left;
 		return { currentRoot, subtree };
 	}
 	return { currentRoot, nullptr };
@@ -164,25 +164,25 @@ typename Treap<T>::Node* Treap<T>::merge(Node* currentRoot, Node* subtree)
 
 	if (currentRoot->left != nullptr && currentRoot->left->priority > currentRoot->priority)
 	{
-		Node* y = currentRoot->left;
-		y->right = currentRoot;
+		Node* newRoot = currentRoot->left;
+		newRoot->right = currentRoot;
 		currentRoot->left = subtree;
 
 		currentRoot->size();
-		y->size();
+		newRoot->size();
 
-		return y;
+		return newRoot;
 	}
 	else if (currentRoot->right != nullptr && currentRoot->right->priority < currentRoot->priority)
 	{
-		Node* y = currentRoot->right;
-		y->left = currentRoot;
+		Node* newRoot = currentRoot->right;
+		newRoot->left = currentRoot;
 		currentRoot->right = subtree;
 
 		currentRoot->size();
-		y->size();
+		newRoot->size();
 
-		return y;
+		return newRoot;
 	}
 }
 
