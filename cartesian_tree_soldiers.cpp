@@ -59,9 +59,21 @@ class Treap
 		}
 		~Node()
 		{
-			delete left;
-			delete right;
+			if (left)
+			{
+				delete left;
+				left = nullptr;
+			}
+			if (right)
+			{
+				delete right;
+				right = nullptr;
+			}
 		}
+		Node(const Node&) = delete;
+		Node& operator=(const Node&) = delete;
+		Node& operator=(Node&&) = delete;
+
 
 	private:
 		unsigned getPriority();
@@ -74,33 +86,37 @@ public:
 
 
 	int GetPosition(const T& val);
-	T FindByPosition(int keyPos);
+	T FindByPosition(int keyPos) const;
 
 	int size() const
 	{
 		return (root != nullptr) ? root->tree_size : 0;
 	}
 
-	Treap() 
-		: root(nullptr) 
+	Treap()
+		: root(nullptr)
 	{
 	};
 	~Treap()
 	{
 		delete root;
 	};
+	Treap(const Treap&) = delete;
+	Treap& operator=(const Treap&) = delete;
+	Treap(Treap&&) = delete;
+	Treap& operator=(const Treap&&) = delete;
 
 private:
 	Node* root;
 
-	Node* _insert(Node* curNode, const T& val);
-	Node* _find(Node* curNode, const T& val, int& keyPos);
+	Node* _insert(Node* curNode, const T& value);
+	Node* _find(Node* curNode, const T& value, int& keyPos) const;
 	Node* _erase(Node* curNode, const T& val, bool& erased);
 
 	std::pair<Treap::Node*, Treap::Node*> split(Node* curNode);
-	Node* merge(Node* l, Node* r);
+	Node* merge(Node* left, Node* right);
 
-	T FindByPosition(Node* curNode, int keyPos);
+	T FindByPosition(Node* curNode, int keyPos) const;
 };
 
 
@@ -183,7 +199,7 @@ bool Treap<T>::Contains(const T& value)
 }
 
 template <typename T>
-typename Treap<T>::Node* Treap<T>::_find(Node* curNode, const T& value, int& keyPos)
+typename Treap<T>::Node* Treap<T>::_find(Node* curNode, const T& value, int& keyPos) const
 {
 	if (curNode == nullptr)
 		return nullptr;
@@ -227,7 +243,7 @@ inline int Treap<T>::GetPosition(const T& value)
 }
 
 template<typename T>
-T Treap<T>::FindByPosition(int keyPos)
+T Treap<T>::FindByPosition(int keyPos) const
 {
 	return FindByPosition(root, keyPos + 1);
 }
@@ -242,7 +258,7 @@ inline bool Treap<T>::Erase(const T& value)
 }
 
 template <typename T>
-T Treap<T>::FindByPosition(Node* curNode, int keyPos)
+T Treap<T>::FindByPosition(Node* curNode, int keyPos) const
 {
 	int rootPos = 1;
 	if (curNode->left != nullptr)

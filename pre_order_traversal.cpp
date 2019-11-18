@@ -25,10 +25,36 @@ class tree
 		node* left;
 		node* right;
 
-		node(int v) : value(v), left(nullptr), right(nullptr) {}
+		node(int v) 
+		: value(v)
+		, left(nullptr)
+		, right(nullptr) 
+		{
+		}
+		node(const node&) = delete;
+		node& operator=(node&&) = delete;
+		node(node&&) = delete;
+		node& operator=(const node&) = delete;
+		~node()
+		{
+			if(left!=nullptr)
+			{
+				delete left;
+				left = nullptr;
+			}
+			if(right!=nullptr)
+			{
+				delete right;
+				right = nullptr;
+			}
+		}
 	};
 public:
 	tree() : root(nullptr) {}
+	~tree()
+	{
+		delete root;
+	}
 	void insert(const int val);
 	void preOrderTraversal(const function& func) const;
 private:
