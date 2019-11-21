@@ -81,7 +81,7 @@ class Treap
 
 public:
 	bool Insert(const T& val);
-	bool Contains(const T& val);
+	bool Contains(const T& val) const;
 	bool Erase(const T& val);
 
 
@@ -187,7 +187,7 @@ typename Treap<T>::Node* Treap<T>::merge(Node* currentRoot, Node* subtree)
 }
 
 template <typename T>
-bool Treap<T>::Contains(const T& value)
+bool Treap<T>::Contains(const T& value) const
 {
 	int keyPos = 0;
 
