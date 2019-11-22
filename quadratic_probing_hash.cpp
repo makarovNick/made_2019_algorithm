@@ -44,7 +44,8 @@ class HashTable
 
 public:
 
-	HashTable();
+	//HashTable() = default;
+	HashTable(const std::string& DEL = "!@#$%^__DELETED_^%$#@!");
 	~HashTable();
 	HashTable& operator =(HashTable&&) = delete;
 	HashTable (HashTable&&) = delete;
@@ -66,14 +67,15 @@ private:
 
 	size_t capacity;
 	size_t size;
-	const std::string deleted = "!@#$%^__DELETED_^%$#@!";
+	std::string deleted;
 	Node** table;
 };
 
 template<typename T, typename Hash>
-HashTable<T, Hash>::HashTable()
+HashTable<T, Hash>::HashTable(const std::string& DEL)
 	: capacity(INIT_SIZE)
 	, size(0)
+	, deleted(DEL)
 {
 	table = new Node * [capacity];
 	for (size_t i = 0; i < capacity; i++)
@@ -81,6 +83,7 @@ HashTable<T, Hash>::HashTable()
 		table[i] = nullptr;
 	}
 }
+
 
 template<typename T, typename Hash>
 HashTable<T, Hash>::~HashTable()
@@ -137,7 +140,7 @@ bool HashTable<T, Hash>::Insert(const T& key)
 			return true;
 		}
 
-		if (table[_hash]->data.compare(deleted) && table[_hash]->data.compare(key) == 0)
+		if (!table[_hash]->data.compare(key))
 		{
 			return false;
 		}
@@ -195,13 +198,33 @@ void HashTable<T, Hash>::Rehash()
 		table[i] = nullptr;
 	}
 
+	Hash hasher;
 	for (size_t i = 0; i < capacity / 2; ++i)
 	{
 		if (tmp[i] != nullptr)
 		{
-			if (tmp[i]->data.compare(deleted))
-				Insert(tmp[i]->data);
-			delete tmp[i];
+			size_t _hash = hasher(tmp[i]->data, capacity/2);
+			size_t j = 0;
+
+			while (j < capacity)
+			{
+				if (table[_hash] == nullptr)
+				{
+					table[_hash] = new Node(tmp[i]->data);
+					break;
+				}
+				else if (table[_hash]->data.compare(deleted))
+				{
+					table[_hash]->data = tmp[i]->data;
+					break;
+				}
+				++j;
+				// Quadratic probing
+				_hash = (_hash + j) % (capacity/2);
+			}
+		// 	if (tmp[i]->data.compare(deleted))
+		// 		Insert(tmp[i]->data);
+		// 	delete tmp[i];
 		}
 	}
 
