@@ -250,9 +250,9 @@ void deleteEmpty(sp_node node)
 }
 
 void decodeRaw(		IOutputStream&	original
-				, const sp_node&		head
-				, const std::string&	data
-				, const byte			remaining_bits)
+		, const sp_node&	head
+		, const std::string&	data
+		, const byte		remaining_bits)
 {
 	sp_node cur_node = head;
 
