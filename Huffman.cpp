@@ -1,412 +1,431 @@
 #include "Huffman.h"
 
-#include <algorithm>
-#include <fstream>
-#include <iostream>
-#include <memory>
 #include <queue>
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
-struct Node 
-{    
-    std::shared_ptr<Node> left;
-    std::shared_ptr<Node> right;
-    char symbol;
-    int freq;
+struct Node
+{
+	std::shared_ptr<Node> left;
+	std::shared_ptr<Node> right;
 
-    explicit Node(char symbol = 0, int freq = 0)
-        : symbol(symbol)
-        , freq(freq)
-        , left(nullptr)
-        , right(nullptr) 
-    {
-    }
+	char symbol;
+	int count;
+
+	Node() = delete;
+	~Node() = default;
+	Node(Node&&) = delete;
+	Node(const Node&) = delete;
+	Node& operator=(Node&&) = delete;
+	Node& operator=(const Node&) = delete;
+
+	Node(char symbol = 0, int count = 0);
 };
-
-using spNode = std::shared_ptr<Node>;
-
-using encode_dict = std::unordered_map<char, long>;
 
 class BitOutStream
 {
 public:
+	BitOutStream(IOutputStream& stream);
 
-    BitOutStream(IOutputStream &stream);
-
-    bool writeBit(bool value);
+	bool writeBit(bool value);
 
 private:
-    IOutputStream &stream;
-    byte currentByte;
-    char bitsWritten;
+	IOutputStream& stream;
+
+	byte cur_byte;
+	char bits_written;
 };
 
-class BitInStream 
+class BitInStream
 {
 public:
-    BitInStream(IInputStream &stream);
+	BitInStream(IInputStream& stream);
 
-    bool readBit(bool &value);
+	bool readBit(bool& value);
 
 private:
-    IInputStream &stream;
+	IInputStream& stream;
 
-    byte currentByte;
-    char bitsRead;
+	byte cur_byte;
+	char bits_read;
 };
 
+using sp_node = std::shared_ptr<Node>;
+using codes_dict = std::unordered_map<char, long>;
+using alphabet_dict = std::unordered_map<byte, long>;
+using length_dict = std::unordered_map<byte, char>;
 
-
-struct freqComparator 
+Node::Node(char symbol, int count)
+	: symbol(symbol)
+	, count(count)
+	, left(nullptr)
+	, right(nullptr)
 {
-    bool operator()(const spNode &left, const spNode &right) const 
-    {
-        if (left->freq != right->freq) 
-        {
-            return left->freq > right->freq;
-        } 
-        else 
-        {
-            return left->symbol > right->symbol;
-        }
-    }
+}
+
+BitInStream::BitInStream(IInputStream& stream)
+	: stream(stream)
+	, bits_read(0)
+{
+}
+BitOutStream::BitOutStream(IOutputStream& stream)
+	: stream(stream)
+	, bits_written(0)
+{
+}
+
+bool BitOutStream::writeBit(bool value)
+{
+	cur_byte <<= 1;
+	cur_byte |= (value) ? 1 : 0;
+
+	bits_written++;
+
+	if (bits_written == 8)
+	{
+		stream.Write(cur_byte);
+		bits_written = 0;
+
+		return true;
+	}
+
+	return false;
+}
+
+bool BitInStream::readBit(bool& value)
+{
+	if (bits_read == 0)
+	{
+		byte tmp = 0;
+		if (!stream.Read(tmp))
+		{
+			return false;
+		}
+		else
+		{
+			cur_byte = 0;
+			for (int i = 0; i < 8; i++)
+			{
+				cur_byte <<= 1;
+				cur_byte |= 1 & tmp;
+
+				tmp >>= 1;
+			}
+		}
+	}
+	value = cur_byte & 1;
+
+	cur_byte >>= 1;
+	bits_read = (bits_read + 1) % 8;
+
+	return true;
+}
+
+struct CountComp
+{
+	bool operator()(const sp_node& left, const sp_node& right) const
+	{
+		if (left->count != right->count)
+		{
+			return left->count > right->count;
+		}
+		else
+		{
+			return left->symbol > right->symbol;
+		}
+	}
 };
-
-BitInStream::BitInStream(IInputStream &stream) 
-    : stream(stream)
-    , bitsRead(0) 
+//makes heap in count priority 
+sp_node makeHeap(const alphabet_dict& alphabet)
 {
+	std::vector<sp_node> counts;
+	for (auto leter : alphabet)
+	{
+		if (leter.second != 0)
+		{
+			counts.push_back(std::make_shared<Node>(leter.first, leter.second));
+		}
+	}
+
+	std::priority_queue<sp_node, std::vector<sp_node>, CountComp>
+		CountsHeap(counts.begin(), counts.end());
+
+	while (CountsHeap.size() > 1)
+	{
+		auto first = CountsHeap.top();
+		CountsHeap.pop();
+
+		auto second = CountsHeap.top();
+		CountsHeap.pop();
+
+		auto new_node = std::make_shared<Node>(0, first->count + second->count);
+		new_node->left = first;
+		new_node->right = second;
+
+		CountsHeap.push(new_node);
+	}
+
+	return CountsHeap.top();
+}
+//fils in dict
+void inOrderTraversal(const sp_node& head, long code, codes_dict& dict)
+{
+	if (head->right == nullptr && head->left == nullptr)
+	{
+		long res = 1;
+		//coding symbols
+		while (code != 1)
+		{
+			res <<= 1;
+			res |= code & 1;
+			code >>= 1;
+		}
+
+		dict[head->symbol] = res != 1 ? res : 2;
+		return;
+	}
+
+	if (head->left != nullptr)
+	{
+		inOrderTraversal(head->left, code << 1, dict);
+	}
+	if (head->right != nullptr)
+	{
+		inOrderTraversal(head->right, (code << 1) + 1, dict);
+	}
 }
 
-bool BitInStream::readBit(bool &value) 
+length_dict getCodesLength(const codes_dict& dict)
 {
-    if (bitsRead == 0) 
-    {
-        byte tmp = 0;
-        if (!stream.Read(tmp))
-        {
-            return false;
-        }
-        else 
-        {
-            currentByte = 0;
-            for (int i = 0; i < 8; i++) 
-            {
-                currentByte <<= 1;
-                currentByte |= 1 & tmp;
-                tmp >>= 1;
-            }
-        }
-    }
-    value = currentByte & 1;
-    currentByte >>= 1;
-    bitsRead = (bitsRead + 1) % 8;
+	length_dict length;
 
-    return true;
+	long code = 0;
+	for (auto i : dict)
+	{
+		length[i.first] = 0;
+		if (i.second != 0)
+		{
+			code = i.second;
+			while (code != 1)
+			{
+				length[i.first]++;
+				code >>= 1;
+			}
+		}
+	}
+	return length;
 }
 
-BitOutStream::BitOutStream(IOutputStream &stream) 
-    : stream(stream)
-    , bitsWritten(0) 
+char getLongestCode(const length_dict& lens)
 {
+	char max = 0;
+	for (auto i : lens)
+	{
+		if (i.second > max)
+		{
+			max = i.second;
+		}
+	}
+
+	return max;
 }
 
-bool BitOutStream::writeBit(bool value) 
+void deleteEmpty(sp_node node)
 {
-    currentByte <<= 1;
-    currentByte |= (value) ? 1 : 0;
-    bitsWritten++;
-    if (bitsWritten == 8) 
-    {
-        stream.Write(currentByte);
-        bitsWritten = 0;
-     
-        return true;
-    }
-    return false;
+	if (!node)
+	{
+		return;
+	}
+
+	if (node->left && !node->right)
+	{
+		node->left = nullptr;
+		return;
+	}
+
+	deleteEmpty(node->left);
+	deleteEmpty(node->right);
 }
 
-spNode makeTree(const std::unordered_map<byte, long> &alphabet) 
+void decodeRaw(		IOutputStream&	original
+				, const sp_node&		head
+				, const std::string&	data
+				, const byte			remaining_bits)
 {
-    std::vector<spNode> frequncies;
-    for (auto leter : alphabet) 
-    {
-        if (leter.second != 0) 
-        {
-            frequncies.push_back(std::make_shared<Node>(leter.first, leter.second));
-        }
-    }
-    std::priority_queue<spNode, std::vector<spNode>, freqComparator>
-            queue_for_min_freq(frequncies.begin(), frequncies.end());
-    while (queue_for_min_freq.size() >= 2) 
-    {
-        auto first = queue_for_min_freq.top();
-        queue_for_min_freq.pop();
-        auto second = queue_for_min_freq.top();
-        queue_for_min_freq.pop();
+	sp_node cur_node = head;
 
-        auto new_node =
-                std::make_shared<Node>(0, first->freq + second->freq);
-        new_node->left = first;
-        new_node->right = second;
-        queue_for_min_freq.push(new_node);
-    }
+	for (int i = 0; i < data.length() - 1; i++)
+	{
+		for (int j = 7; j >= 0; j--)
+		{
+			if (((data[i] >> j) & 1) == 0)
+			{
+				cur_node = cur_node->left;
+			}
+			else
+			{
+				cur_node = cur_node->right;
+			}
+			if (cur_node->left == nullptr)
+			{
+				original.Write(cur_node->symbol);
 
-    return queue_for_min_freq.top();
+				cur_node = head;
+			}
+		}
+	}
+	for (int j = 7; j >= remaining_bits; j--)
+	{
+		if (((data[data.length() - 1] >> j) & 1) == 0)
+		{
+			cur_node = cur_node->left;
+		}
+		else
+		{
+			cur_node = cur_node->right;
+		}
+		if (cur_node->left == nullptr)
+		{
+			original.Write(cur_node->symbol);
+			cur_node = head;
+		}
+	}
 }
 
-void inOrderTraversal(const spNode &head, long code, encode_dict &dict) 
+void Encode(IInputStream& original, IOutputStream& compressed)
 {
-    if (head->right == nullptr && head->left == nullptr) 
-    {
-        long result = 1;
-        while (code != 1) 
-        {
-            result <<= 1;
-            result |= code & 1;
-            code >>= 1;
-        }
+	alphabet_dict alphabet;
+	codes_dict res;
 
-        dict[head->symbol] = result != 1 ? result : 2;
-        return;
-    }
-    if (head->left != nullptr) 
-    {
-        inOrderTraversal(head->left, code << 1, dict);
-    }
-    if (head->right != nullptr) 
-    {
-        inOrderTraversal(head->right, (code << 1) + 1, dict);
-    }
+	std::string data;
+	byte symbol = 0;
+	while (original.Read(symbol))
+	{
+		alphabet[symbol]++;
+		data += symbol;
+	}
+
+	sp_node tree = makeHeap(alphabet);
+	inOrderTraversal(tree, 1, res);
+
+	length_dict code_len = getCodesLength(res);
+	char max_len = getLongestCode(code_len);
+
+	size_t codes_len = 0;
+	byte alphabet_len = 0;
+
+	for (auto i : alphabet)
+	{
+		if (i.second != 0)
+		{
+			alphabet_len++;
+		}
+
+		codes_len = (codes_len + i.second * code_len[i.first]) % 8;
+	}
+
+	byte remaining_bits = (8 - codes_len) % 8;
+	byte code_bytes = (max_len % 8 == 0) ? (max_len / 8) : (max_len / 8 + 1);
+
+	BitOutStream bos(compressed);
+
+	compressed.Write(alphabet_len);
+	compressed.Write(remaining_bits);
+	compressed.Write(code_bytes);
+
+	long code = 0;
+	int j = 0;
+
+	for (auto i : res)
+	{
+		if (alphabet[i.first] != 0)
+		{
+			code = i.second;
+			compressed.Write(byte(i.first));
+
+			while (code != 1)
+			{
+				bos.writeBit(code & 1);
+				code >>= 1;
+				j++;
+			}
+			for (; j < code_bytes * 8; j++)
+			{
+				bos.writeBit(0);
+			}
+		}
+		j = 0;
+	}
+
+	for (auto i : data)
+	{
+		code = res[i];
+
+		while (code != 1)
+		{
+			bos.writeBit(code & 1);
+			code >>= 1;
+		}
+	}
+
+	for (size_t i = 0; i < remaining_bits; i++)
+	{
+		bos.writeBit(0);
+	}
 }
 
-std::unordered_map<byte, char> getCodesLength(const encode_dict &dict) 
+void Decode(IInputStream& compressed, IOutputStream& original)
 {
-    std::unordered_map<byte, char> result;
-    long code = 0;
-    for (auto i : dict) 
-    {
-        result[i.first] = 0;
-        if (i.second != 0) 
-        {
-            code = i.second;
-            while (code != 1) 
-            {
-                result[i.first]++;
-                code >>= 1;
-            }
-        }
-    }
-    return result;
-}
+	byte alphabet_len;
+	byte remaining_bits;
+	byte code_bytes;
 
-char getLongestCode(const std::unordered_map<byte, char> &lens) 
-{
-    char max = 0;
-    for (auto i : lens) 
-    {
-        if (i.second > max) 
-        {
-            max = i.second;
-        }
-    }
+	compressed.Read(alphabet_len);
+	compressed.Read(remaining_bits);
+	compressed.Read(code_bytes);
 
-    return max;
-}
+	auto head = std::make_shared<Node>(0, 0);
+	BitInStream bis(compressed);
 
-void deleteEmptyNode(spNode node) 
-{
-    if (node == nullptr) 
-    {
-        return;
-    }
+	byte symbol = 0;
+	bool bit;
+	//firstly fill alphabet and codes
+	for (int i = 0; i < alphabet_len; i++)
+	{
+		auto cur_node = head;
+		compressed.Read(symbol);
 
-    if (node->left != nullptr && node->right == nullptr) 
-    {
-        node->left = nullptr;
-        return;
-    }
+		for (int j = 0; j < 8 * code_bytes; j++)
+		{
+			bis.readBit(bit);
+			if (bit == 0)
+			{
+				if (cur_node->left == nullptr)
+				{
+					cur_node->left = std::make_shared<Node>(symbol, 0);
+				}
+				cur_node = cur_node->left;
+			}
+			else
+			{
+				if (cur_node->right == nullptr)
+				{
+					cur_node->right = std::make_shared<Node>(symbol, 0);
+				}
+				cur_node = cur_node->right;
+			}
+		}
+	}
 
-    deleteEmptyNode(node->left);
-    deleteEmptyNode(node->right);
-}
+	deleteEmpty(head);
 
-void decodeHelper(       IOutputStream &original
-                 , const spNode        &head
-                 , const std::string   &text
-                 , const byte          rest_bits) 
-{
-    spNode cur_node = head;
-    for (int i = 0; i < text.length() - 1; i++)
-    {
-        for (int j = 7; j >= 0; j--) 
-        {
-            if (((text[i] >> j) & 1) == 0) 
-            {
-                cur_node = cur_node->left;
-            } 
-            else 
-            {
-                cur_node = cur_node->right;
-            }
-            if (cur_node->left == nullptr) 
-            {
-                original.Write(cur_node->symbol);
-                
-                cur_node = head;
-            }
-        }
-    }
-    for (int j = 7; j >= rest_bits; j--) 
-    {
-        if (((text[text.length() - 1] >> j) & 1) == 0) 
-        {
-            cur_node = cur_node->left;
-        } 
-        else 
-        {
-            cur_node = cur_node->right;
-        }
-        if (cur_node->left == nullptr) 
-        {
-            original.Write(cur_node->symbol);
-            cur_node = head;
-        }
-    }
-}
-
-void Encode(IInputStream &original, IOutputStream &compressed) 
-{
-    std::unordered_map<byte, long> alphabet;
-    encode_dict result;
-
-    std::string text;
-    byte symbol = 0;
-    while (original.Read(symbol)) 
-    {
-        alphabet[symbol]++;
-        text += symbol;
-    }
-
-    spNode tree = makeTree(alphabet);
-    inOrderTraversal(tree, 1, result);
-
-    std::unordered_map<byte, char> len_of_code = getCodesLength(result);
-    char max_len = getLongestCode(len_of_code);
-
-    size_t encode_size = 0;
-    byte alphabet_size = 0;
-
-    for (auto i : alphabet) 
-    {
-        if (i.second != 0) 
-        {
-            alphabet_size++;
-        }
-
-        encode_size = (encode_size + i.second * len_of_code[i.first]) % 8;
-    }
-
-    byte rest_bits = (8 - encode_size) % 8;
-    byte bytes_in_code = (max_len % 8 == 0) ? (max_len / 8) : (max_len / 8 + 1);
-
-    BitOutStream bout(compressed);
-    compressed.Write(alphabet_size);
-    compressed.Write(rest_bits);
-    compressed.Write(bytes_in_code);
-
-    long code = 0;
-    int j = 0;
-    for (auto i : result) 
-    {
-        if (alphabet[i.first] != 0) 
-        {
-            code = i.second;
-            compressed.Write(byte(i.first));
-
-            while (code != 1) 
-            {
-                bout.writeBit(code & 1);
-                code >>= 1;
-                j++;
-            }
-            for (; j < bytes_in_code * 8; j++) 
-            {
-                bout.writeBit(0);
-            }
-        }
-        j = 0;
-    }
-
-    for (auto i : text) 
-    {
-        code = result[i];
-
-        while (code != 1) 
-        {
-            bout.writeBit(code & 1);
-            code >>= 1;
-        }
-    }
-
-    for (size_t i = 0; i < rest_bits; i++) 
-    {
-        bout.writeBit(0);
-    }
-}
-
-void Decode(IInputStream &compressed, IOutputStream &original) 
-{
-    byte alphabet_size;
-    byte rest_bits;
-    byte bytes_in_code;
-
-    compressed.Read(alphabet_size);
-    compressed.Read(rest_bits);
-    compressed.Read(bytes_in_code);
-
-    auto head = std::make_shared<Node>(0, 0);
-    BitInStream bin(compressed);
-
-    byte symbol = 0;
-    bool cur_bit;
-
-    for (int i = 0; i < alphabet_size; i++) 
-    {
-        auto cur_node = head;
-        compressed.Read(symbol);
-
-        for (int j = 0; j < 8 * bytes_in_code; j++) 
-        {
-            bin.readBit(cur_bit);
-            if (cur_bit == 0) 
-            {
-                if (cur_node->left == nullptr) 
-                {
-                    cur_node->left = std::make_shared<Node>(symbol, 0);
-                }
-                cur_node = cur_node->left;
-            } 
-            else 
-            {
-                if (cur_node->right == nullptr)
-                {
-                    cur_node->right = std::make_shared<Node>(symbol, 0);
-                }
-                cur_node = cur_node->right;
-            }
-        }
-    }
-
-    deleteEmptyNode(head);
-
-    std::string text;
-    while (compressed.Read(symbol)) 
-    {
-        text += symbol;
-    }
-
-    decodeHelper(original, head, text, rest_bits);
+	std::string data;
+	while (compressed.Read(symbol))
+	{
+		data += symbol;
+	}
+	//decode raw data with alphabet
+	decodeRaw(original, head, data, remaining_bits);
 }
