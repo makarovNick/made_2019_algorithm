@@ -23,7 +23,7 @@
 
 const int MAX_VERTICES = 50000;
 
-int numberOfPath(const std::vector<std::vector<int>>& graph, int from, int to) 
+int numberOfPaths(const std::vector<std::vector<int>>& graph, int from, int to) 
 {
 	std::vector<int> dist(graph.size(), MAX_VERTICES);
 	std::vector<int> path(graph.size(), 0);
@@ -71,12 +71,13 @@ int numberOfPath(const std::vector<std::vector<int>>& graph, int from, int to)
 
 int main() 
 {
-	int n, from, to;
-	std::cin >> n;
-	std::vector<std::vector<int>> graph(n);
+	int V, E;
+	std::cin >> V >> E;
 
-	std::cin >> n;
-	for (int i = 0; i < n; ++i)
+	std::vector<std::vector<int>> graph(V);
+
+    int from, to;
+	for (int i = 0; i < E; ++i)
 	{
 		std::cin >> from >> to;
 
@@ -85,7 +86,7 @@ int main()
 	}
 
 	std::cin >> from >> to;
-	std::cout << numberOfPath(graph, from, to);
+	std::cout << numberOfPaths(graph, from, to);
 
 	return 0;
 }
