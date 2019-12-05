@@ -23,7 +23,34 @@
 
 const int MAX_VERTICES = 50000;
 
-int numberOfPaths(const std::vector<std::vector<int>>& graph, int from, int to) 
+struct Graph
+{
+	Graph(int verts)
+	{
+		edges.resize(verts);
+	}
+	void addEdge(int from, int to)
+	{
+		edges[from].push_back(to);
+		edges[to].push_back(from);
+	}
+
+	std::vector<int> getEdgesFrom(int vert) const
+	{
+		return edges[vert];
+	}
+	
+	size_t size() const
+	{
+		return edges.size();
+	}
+
+private:
+	std::vector<std::vector<int>> edges;
+};
+
+
+int numberOfPaths(const Graph& graph, int from, int to) 
 {
 	std::vector<int> dist(graph.size(), MAX_VERTICES);
 	std::vector<int> path(graph.size(), 0);
@@ -32,7 +59,7 @@ int numberOfPaths(const std::vector<std::vector<int>>& graph, int from, int to)
 	std::queue<int> vert_queue;
 
 	path[from] = 1;
-	for (auto i : graph[from]) 
+	for (auto i : graph.getEdgesFrom(from)) 
 	{
 		path[i] = 1;
 	}
@@ -47,7 +74,7 @@ int numberOfPaths(const std::vector<std::vector<int>>& graph, int from, int to)
 
 		vert_queue.pop();
 
-		for (auto i : graph[v]) 
+		for (auto i : graph.getEdgesFrom(v)) 
 		{
 			if (dist[i] > dist[v] + 1) 
 			{
@@ -74,15 +101,14 @@ int main()
 	int V, E;
 	std::cin >> V >> E;
 
-	std::vector<std::vector<int>> graph(V);
+	Graph graph(V);
 
     int from, to;
 	for (int i = 0; i < E; ++i)
 	{
 		std::cin >> from >> to;
 
-		graph[from].push_back(to);
-		graph[to].push_back(from);
+		graph.addEdge(from,to);
 	}
 
 	std::cin >> from >> to;
