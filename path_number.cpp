@@ -29,6 +29,12 @@ struct Graph
 	{
 		edges.resize(verts);
 	}
+	~Graph() = default;
+	Graph(Graph&&) = delete;
+	Graph (const Graph&) = delete;
+	Graph& operator=(Graph&&) = delete;
+	Graph& operator=(const Graph&) = delete;
+
 	void addEdge(int from, int to)
 	{
 		edges[from].push_back(to);
