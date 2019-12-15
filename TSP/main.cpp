@@ -2,9 +2,6 @@
 #include "box_muller_generator.h"
 #include "experiment.h"
 
-#include <iostream>
-#include <ctime>
-
 int main()
 {
     Experiment ex;
