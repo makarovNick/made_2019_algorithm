@@ -30,84 +30,103 @@
 /*******************************************************/
 #include <iostream>
 
-int* MedianOfThree(int* first, int* last) {
-	int* middle = first + ((last - first) / 2);
+int* MedianOfThree(int* first, int* last)
+{
+    int* middle = first + ((last - first) / 2);
 
-	if (*first < *middle) {
-		if (*middle < *last) {
-			return middle;
-		}
-		else if (*first < *last) {
-			return last;
-		}
-		else {
-			return first;
-		}
-	}
-	else {
-		if (*first < *last) {
-			return first;
-		}
-		else if (*middle < *last) {
-			return last;
-		}
-		else {
-			return middle;
-		}
-	}
+    if (*first < *middle)
+    {
+        if (*middle < *last)
+        {
+            return middle;
+        }
+        else if (*first < *last)
+        {
+            return last;
+        }
+        else
+        {
+            return first;
+        }
+    }
+    else
+    {
+        if (*first < *last)
+        {
+            return first;
+        }
+        else if (*middle < *last)
+        {
+            return last;
+        }
+        else
+        {
+            return middle;
+        }
+    }
 }
-int* Partition(int* begin, int* end) {
-	int* pivot = MedianOfThree(begin, end);
+int* Partition(int* begin, int* end)
+{
+    int* pivot = MedianOfThree(begin, end);
 
-	std::iter_swap(begin, pivot);
+    std::iter_swap(begin, pivot);
 
-	int* i = end;
-	int* j = end;
+    int* i = end;
+    int* j = end;
 
-	for (; j > begin; --j) {
-		if (*j >= *begin) {
-			std::iter_swap(i, j);
-			--i;
-		}
-	}
+    for (; j > begin; --j)
+    {
+        if (*j >= *begin)
+        {
+            std::iter_swap(i, j);
+            --i;
+        }
+    }
 
-	std::iter_swap(begin, i);
+    std::iter_swap(begin, i);
 
-	return i;
+    return i;
 }
-int FindKStatistics(int* begin, int* end, size_t index) {
-	int* first = begin;
-	int* last = end;
+int FindKStatistics(int* begin, int* end, size_t index)
+{
+    int* first = begin;
+    int* last = end;
 
-	while (true) {
-		int* pivot = Partition(first, last);
-		int pivot_element_position = pivot - begin;
+    while (true)
+    {
+        int* pivot = Partition(first, last);
+        int pivot_element_position = pivot - begin;
 
-		if (pivot_element_position == index) {
-			return *(begin + index);
-		}
-		else if (pivot_element_position > index) {
-			last = pivot;
-		}
-		else {
-			first = pivot + 1;
-		}
-	}
+        if (pivot_element_position == index)
+        {
+            return *(begin + index);
+        }
+        else if (pivot_element_position > index)
+        {
+            last = pivot;
+        }
+        else
+        {
+            first = pivot + 1;
+        }
+    }
 }
-int main() {
-	int n;
-	std::cin >> n;
+int main()
+{
+    int n;
+    std::cin >> n;
 
-	size_t index;
-	std::cin >> index;
-	int* arr = new int[n];
-	for (int i = 0; i < n; ++i) {
-		int item;
-		std::cin >> item;
-		arr[i] = item;
-	}
+    size_t index;
+    std::cin >> index;
+    int* arr = new int[n];
+    for (int i = 0; i < n; ++i)
+    {
+        int item;
+        std::cin >> item;
+        arr[i] = item;
+    }
 
-	std::cout << FindKStatistics(arr, arr + n - 1, index);
-	delete[] arr;
-	return 0;
+    std::cout << FindKStatistics(arr, arr + n - 1, index);
+    delete[] arr;
+    return 0;
 }
